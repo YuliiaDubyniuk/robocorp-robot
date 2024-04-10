@@ -17,6 +17,7 @@ def order_robots_from_RobotSpareBin():
     Embeds the screenshot of the robot to the PDF receipt.
     Creates ZIP archive of the receipts and the images.
     """
+    page = browser.page()
     browser.configure(slowmo=100)
     open_robot_order_website()
     download_orders_file()
@@ -48,13 +49,12 @@ def fill_form_with_data():
 
 def close_annoying_modal():
     """closes modal on robot website"""
+    global page
     page = browser.page()  
     page.click("text=OK")
 
 def fill_the_form_and_submit_order(order):
-    page = browser.page()
-    head_number = str(order["Head"])
-    page.select_option("#head", {head_number})
+    page.select_option("#head", {str(order["Head"])})
     body_number = order["Body"]
     page.check(f"input[name='body'][value='{body_number}']")
     page.fill("input[placeholder='Enter the part number for the legs']", order["Legs"])
@@ -62,9 +62,9 @@ def fill_the_form_and_submit_order(order):
     page.click("#order")
     order_another_btn = page.is_visible("#order-another")
     if order_another_btn:
-        receipt_path = store_receipt_as_pdf(order["Order number"])
+        pdf_path = store_receipt_as_pdf(order["Order number"])
         screenshot_path = screenshot_robot(order["Order number"])
-        embed_screenshot_to_receipt(screenshot_path, receipt_path)
+        # embed_screenshot_to_receipt(screenshot_path, pdf_path)
         page.click("#order-another")
         close_annoying_modal()        
 
@@ -75,24 +75,23 @@ def fill_the_form_and_submit_order(order):
 
 def store_receipt_as_pdf(order_number):
     """Saves receipt as pdf file"""
-    page = browser.page()
     receipt_html = page.locator("#receipt").inner_html()
+    receipt_path = "output/receipts/robot_receipt_{}.pdf".format(order_number)
     pdf = PDF()
-    receipt_path = pdf.html_to_pdf(receipt_html, "output/receipts/robot_receipt_{}.pdf".format(order_number))
+    receipt_path = pdf.html_to_pdf(receipt_html, receipt_path)
     return receipt_path
 
 def screenshot_robot(order_number):
     """Takes a screenshot of the robot"""
-    page = browser.page()
     screenshot_path = "output/screenshots/robot_image_{}.png".format(order_number)
     page.locator("#robot-preview-image").screenshot(path=screenshot_path)
     return screenshot_path
 
-def embed_screenshot_to_receipt(screenshot, pdf_file):
-    """Embeds the screenshot to the receipt"""
-    pdf = PDF()    
-    # pdf.add_watermark_image_to_pdf(image_path=screenshot, source_path=pdf_file, output_path=pdf_file)
-    pdf.add_files_to_pdf(screenshot, pdf_file, append=True)
+# def embed_screenshot_to_receipt(screenshot_path, pdf_path):
+#     """Embeds the screenshot to the receipt"""
+#     pdf = PDF()
+#     pdf.add_watermark_image_to_pdf(image_path=screenshot_path, source_path=pdf_path, output_path=pdf_path)
+       
 
 
 # def archive_receipts():
